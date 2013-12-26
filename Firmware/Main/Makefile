@@ -41,6 +41,8 @@ SRC += $(LIBPATH)syscalls.c
 SRC += $(LIBPATH)rprintf.c 
 SRC += $(LIBPATH)string_printf.c 
 SRC += $(LIBPATH)serial.c 
+SRC += $(LIBPATH)SPI1.c 
+SRC += $(LIBPATH)ADXL362.c
 
 #Functions for SD interaction
 SRC += $(LIBPATH)rootdir.c 

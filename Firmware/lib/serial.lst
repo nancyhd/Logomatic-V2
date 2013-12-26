@@ -1,0 +1,416 @@
+   1              		.file	"serial.c"
+   9              	.Ltext0:
+  10              		.global	__udivsi3
+  11              		.align	2
+  12              		.global	init_serial0
+  14              	init_serial0:
+  15              	.LFB2:
+  16              		.file 1 "../lib/serial.c"
+   1:../lib/serial.c **** /******************************************************************************/
+   2:../lib/serial.c **** /*  This file is part of the uVision/ARM development tools                    */
+   3:../lib/serial.c **** /*  Copyright KEIL ELEKTRONIK GmbH 2002-2004                                  */
+   4:../lib/serial.c **** /******************************************************************************/
+   5:../lib/serial.c **** /*                                                                            */
+   6:../lib/serial.c **** /*  SERIAL.C:  Low Level Serial Routines                                      */
+   7:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+   8:../lib/serial.c **** /*                                                                            */
+   9:../lib/serial.c **** /******************************************************************************/
+  10:../lib/serial.c **** 
+  11:../lib/serial.c **** #include "LPC214x.h"
+  12:../lib/serial.c **** #include "target.h"
+  13:../lib/serial.c **** #include "serial.h"
+  14:../lib/serial.c **** 
+  15:../lib/serial.c **** #define CR     0x0D
+  16:../lib/serial.c **** 
+  17:../lib/serial.c **** /* Initialize Serial Interface UART0 */
+  18:../lib/serial.c **** void init_serial0 ( unsigned long baudrate )
+  19:../lib/serial.c **** {
+  17              	Function supports interworking.
+  18              		@ args = 0, pretend = 0, frame = 0
+  19              		@ frame_needed = 0, uses_anonymous_args = 0
+  20              	.LVL0:
+  21              		.loc 1 22 0
+  20:../lib/serial.c **** ialize Serial Interface UART0 */
+  21:../lib/serial.c **** void init_serial0 ( unsigned long baudrate )
+  22:../lib/serial.c **** {
+  22              	r3, .L3
+  23 0000 40309FE5 		.loc 1 19 0
+  24              		stmfd	sp!, {r4, lr}
+  25 0004 10402DE9 	.LCFI0:
+  26              		.loc 1 22 0
+  27              		mov	r2, #5
+  28 0008 0520A0E3 		.loc 1 23 0
+  23:../lib/serial.c **** ialize Serial Interface UART0 */
+  29              	, .L3+4
+  30 000c 38409FE5 		.loc 1 22 0
+  31              		str	r2, [r3, #0]
+  32 0010 002083E5 		.loc 1 23 0
+  33              		mov	r3, #131
+  34 0014 8330A0E3 		.loc 1 19 0
+  35              		mov	r1, r0
+  36 0018 0010A0E1 		.loc 1 23 0
+  37              		str	r3, [r4, #12]
+  38 001c 0C3084E5 		.loc 1 24 0
+  24:../lib/serial.c **** #include "serial.h"
+  39              	L3+8
+  40 0020 28009FE5 	.LVL1:
+  41              		bl	__udivsi3
+  42 0024 FEFFFFEB 	.LVL2:
+  43              		.loc 1 26 0
+  25:../lib/serial.c **** **********************/
+  26:../lib/serial.c **** 
+  44              	r3, r0, #255
+  45 0028 FF3000E2 		.loc 1 25 0
+  46              		mov	r0, r0, lsr #8
+  47 002c 2004A0E1 		str	r0, [r4, #4]
+  48 0030 040084E5 		.loc 1 26 0
+  49              		str	r3, [r4, #0]
+  50 0034 003084E5 		.loc 1 27 0
+  27:../lib/serial.c ****     */
+  51              	, #3
+  52 0038 0330A0E3 		str	r3, [r4, #12]
+  53 003c 0C3084E5 		.loc 1 28 0
+  28:../lib/serial.c ****        */
+  54              	mfd	sp!, {r4, lr}
+  55 0040 1040BDE8 		bx	lr
+  56 0044 1EFF2FE1 	.L4:
+  57              		.align	2
+  58              	.L3:
+  59              		.word	-536690688
+  60 0048 00C002E0 		.word	-536821760
+  61 004c 00C000E0 		.word	3750000
+  62 0050 70383900 	.LFE2:
+  64              		.align	2
+  65              		.global	init_serial1
+  67              	init_serial1:
+  68              	.LFB3:
+  69              		.loc 1 32 0
+  29:../lib/serial.c ****         */
+  30:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+  31:../lib/serial.c **** /*                                                                            */
+  32:../lib/serial.c **** /******************************************************************************/
+  70              	orts interworking.
+  71              		@ args = 0, pretend = 0, frame = 0
+  72              		@ frame_needed = 0, uses_anonymous_args = 0
+  73              	.LVL3:
+  74              		.loc 1 35 0
+  33:../lib/serial.c ****       */
+  34:../lib/serial.c **** /******************************************************************************/
+  35:../lib/serial.c **** 
+  75              	r2, .L7
+  76 0054 44209FE5 		ldr	r3, [r2, #0]
+  77 0058 003092E5 		.loc 1 32 0
+  78              		stmfd	sp!, {r4, lr}
+  79 005c 10402DE9 	.LCFI1:
+  80              		.loc 1 35 0
+  81              		orr	r3, r3, #327680
+  82 0060 053883E3 		.loc 1 36 0
+  36:../lib/serial.c ****     */
+  83              	 .L7+4
+  84 0064 38409FE5 		.loc 1 35 0
+  85              		str	r3, [r2, #0]
+  86 0068 003082E5 		.loc 1 36 0
+  87              		mov	r3, #131
+  88 006c 8330A0E3 		.loc 1 32 0
+  89              		mov	r1, r0
+  90 0070 0010A0E1 		.loc 1 36 0
+  91              		str	r3, [r4, #12]
+  92 0074 0C3084E5 		.loc 1 37 0
+  37:../lib/serial.c ****        */
+  93              	L7+8
+  94 0078 28009FE5 	.LVL4:
+  95              		bl	__udivsi3
+  96 007c FEFFFFEB 	.LVL5:
+  97              		.loc 1 39 0
+  38:../lib/serial.c ****         */
+  39:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+  98              	r3, r0, #255
+  99 0080 FF3000E2 		.loc 1 38 0
+ 100              		mov	r0, r0, lsr #8
+ 101 0084 2004A0E1 		str	r0, [r4, #4]
+ 102 0088 040084E5 		.loc 1 39 0
+ 103              		str	r3, [r4, #0]
+ 104 008c 003084E5 		.loc 1 40 0
+  40:../lib/serial.c ****         */
+ 105              	, #3
+ 106 0090 0330A0E3 		str	r3, [r4, #12]
+ 107 0094 0C3084E5 		.loc 1 41 0
+  41:../lib/serial.c ****          */
+ 108              	mfd	sp!, {r4, lr}
+ 109 0098 1040BDE8 		bx	lr
+ 110 009c 1EFF2FE1 	.L8:
+ 111              		.align	2
+ 112              	.L7:
+ 113              		.word	-536690688
+ 114 00a0 00C002E0 		.word	-536805376
+ 115 00a4 000001E0 		.word	3750000
+ 116 00a8 70383900 	.LFE3:
+ 118              		.align	2
+ 119              		.global	putchar_serial0
+ 121              	putchar_serial0:
+ 122              	.LFB4:
+ 123              		.loc 1 45 0
+  42:../lib/serial.c **** ***********/
+  43:../lib/serial.c **** /*                                                                            */
+  44:../lib/serial.c **** /*  SERIAL.C:  Low Level Serial Routines                                      */
+  45:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+ 124              	orts interworking.
+ 125              		@ args = 0, pretend = 0, frame = 0
+ 126              		@ frame_needed = 0, uses_anonymous_args = 0
+ 127              		@ link register save eliminated.
+ 128              	.LVL6:
+ 129              		.loc 1 46 0
+  46:../lib/serial.c ****         */
+ 130              	0, #10
+ 131 00ac 0A0050E3 		.loc 1 45 0
+ 132              		@ lr needed for prologue
+ 133              		.loc 1 46 0
+ 134              		bne	.L16
+ 135 00b0 0500001A 	.L15:
+ 136              		.loc 1 48 0
+  47:../lib/serial.c ****          */
+  48:../lib/serial.c **** /*  SERIAL.C:  Low Level Serial Routines                                      */
+ 137              	, .L21
+ 138 00b4 2C209FE5 		ldr	r3, [r2, #20]
+ 139 00b8 143092E5 		tst	r3, #32
+ 140 00bc 200013E3 		beq	.L15
+ 141 00c0 FBFFFF0A 		.loc 1 49 0
+  49:../lib/serial.c ****          */
+ 142              	r3, #13
+ 143 00c4 0D30A0E3 		str	r3, [r2, #0]
+ 144 00c8 003082E5 	.L16:
+ 145              		.loc 1 51 0
+  50:../lib/serial.c **** ***********/
+  51:../lib/serial.c **** /*                                                                            */
+ 146              		r2, .L21
+ 147 00cc 14209FE5 		ldr	r3, [r2, #20]
+ 148 00d0 143092E5 		tst	r3, #32
+ 149 00d4 200013E3 		beq	.L16
+ 150 00d8 FBFFFF0A 		.loc 1 52 0
+  52:../lib/serial.c **** ***********/
+ 151              	r0, [r2, #0]
+ 152 00dc 000082E5 		ldr	r0, [r2, #0]
+ 153 00e0 000092E5 	.LVL7:
+ 154              		.loc 1 53 0
+  53:../lib/serial.c ****            */
+ 155              	lr
+ 156 00e4 1EFF2FE1 	.L22:
+ 157              		.align	2
+ 158              	.L21:
+ 159              		.word	-536821760
+ 160 00e8 00C000E0 	.LFE4:
+ 162              		.align	2
+ 163              		.global	putc_serial0
+ 165              	putc_serial0:
+ 166              	.LFB5:
+ 167              		.loc 1 57 0
+  54:../lib/serial.c ****             */
+  55:../lib/serial.c **** /*  Copyright KEIL ELEKTRONIK GmbH 2002-2004                                  */
+  56:../lib/serial.c **** /******************************************************************************/
+  57:../lib/serial.c **** /*                                                                            */
+ 168              	upports interworking.
+ 169              		@ args = 0, pretend = 0, frame = 0
+ 170              		@ frame_needed = 0, uses_anonymous_args = 0
+ 171              		@ link register save eliminated.
+ 172              	.LVL8:
+ 173              		@ lr needed for prologue
+ 174              	.L25:
+ 175              		.loc 1 58 0
+  58:../lib/serial.c **** ***********/
+ 176              	 .L30
+ 177 00ec 14209FE5 		ldr	r3, [r2, #20]
+ 178 00f0 143092E5 		tst	r3, #32
+ 179 00f4 200013E3 		beq	.L25
+ 180 00f8 FBFFFF0A 		.loc 1 59 0
+  59:../lib/serial.c ****            */
+ 181              	r0, [r2, #0]
+ 182 00fc 000082E5 		ldr	r0, [r2, #0]
+ 183 0100 000092E5 	.LVL9:
+ 184              		.loc 1 60 0
+  60:../lib/serial.c ****             */
+ 185              	lr
+ 186 0104 1EFF2FE1 	.L31:
+ 187              		.align	2
+ 188              	.L30:
+ 189              		.word	-536821760
+ 190 0108 00C000E0 	.LFE5:
+ 192              		.align	2
+ 193              		.global	putc_serial1
+ 195              	putc_serial1:
+ 196              	.LFB6:
+ 197              		.loc 1 64 0
+  61:../lib/serial.c **** **************/
+  62:../lib/serial.c **** /*  This file is part of the uVision/ARM development tools                    */
+  63:../lib/serial.c **** /*  Copyright KEIL ELEKTRONIK GmbH 2002-2004                                  */
+  64:../lib/serial.c **** /******************************************************************************/
+ 198              	upports interworking.
+ 199              		@ args = 0, pretend = 0, frame = 0
+ 200              		@ frame_needed = 0, uses_anonymous_args = 0
+ 201              		@ link register save eliminated.
+ 202              	.LVL10:
+ 203              		@ lr needed for prologue
+ 204              	.L34:
+ 205              		.loc 1 65 0
+  65:../lib/serial.c ****            */
+ 206              	 .L39
+ 207 010c 14209FE5 		ldr	r3, [r2, #20]
+ 208 0110 143092E5 		tst	r3, #32
+ 209 0114 200013E3 		beq	.L34
+ 210 0118 FBFFFF0A 		.loc 1 66 0
+  66:../lib/serial.c ****             */
+ 211              	r0, [r2, #0]
+ 212 011c 000082E5 		ldr	r0, [r2, #0]
+ 213 0120 000092E5 	.LVL11:
+ 214              		.loc 1 67 0
+  67:../lib/serial.c **** **************/
+ 215              	lr
+ 216 0124 1EFF2FE1 	.L40:
+ 217              		.align	2
+ 218              	.L39:
+ 219              		.word	-536805376
+ 220 0128 000001E0 	.LFE6:
+ 222              		.align	2
+ 223              		.global	putstring_serial0
+ 225              	putstring_serial0:
+ 226              	.LFB7:
+ 227              		.loc 1 70 0
+  68:../lib/serial.c **** /******************************************************************************/
+  69:../lib/serial.c **** /*  This file is part of the uVision/ARM development tools                    */
+  70:../lib/serial.c **** /*  Copyright KEIL ELEKTRONIK GmbH 2002-2004                                  */
+ 228              	upports interworking.
+ 229              		@ args = 0, pretend = 0, frame = 0
+ 230              		@ frame_needed = 0, uses_anonymous_args = 0
+ 231              	.LVL12:
+ 232              		stmfd	sp!, {r4, lr}
+ 233 012c 10402DE9 	.LCFI2:
+ 234              		.loc 1 70 0
+ 235              		mov	r4, r0
+ 236 0130 0040A0E1 		b	.L42
+ 237 0134 000000EA 	.LVL13:
+ 238              	.L43:
+ 239              		.loc 1 75 0
+  71:../lib/serial.c ****             */
+  72:../lib/serial.c **** /*  Copyright KEIL ELEKTRONIK GmbH 2002-2004                                  */
+  73:../lib/serial.c **** /******************************************************************************/
+  74:../lib/serial.c **** /*                                                                            */
+  75:../lib/serial.c **** /*  SERIAL.C:  Low Level Serial Routines                                      */
+ 240              	serial0
+ 241 0138 FEFFFFEB 	.LVL14:
+ 242              	.LVL15:
+ 243              	.L42:
+ 244              		.loc 1 73 0
+ 245              		ldrb	r3, [r4, #0]	@ zero_extendqisi2
+ 246 013c 0030D4E5 	.LVL16:
+ 247              		subs	r0, r3, #0
+ 248 0140 000053E2 		.loc 1 76 0
+  76:../lib/serial.c ****          */
+ 249              	r4, #1
+ 250 0144 014084E2 		.loc 1 73 0
+ 251              		bne	.L43
+ 252 0148 FAFFFF1A 	.LVL17:
+ 253              		.loc 1 78 0
+  77:../lib/serial.c **** ***********/
+  78:../lib/serial.c **** /*                                                                            */
+ 254              	d	sp!, {r4, lr}
+ 255 014c 1040BDE8 		bx	lr
+ 256 0150 1EFF2FE1 	.LFE7:
+ 258              		.align	2
+ 259              		.global	getkey_serial0
+ 261              	getkey_serial0:
+ 262              	.LFB8:
+ 263              		.loc 1 83 0
+  79:../lib/serial.c **** ***********/
+  80:../lib/serial.c **** /*                                                                            */
+  81:../lib/serial.c **** /*  SERIAL.C:  Low Level Serial Routines                                      */
+  82:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+  83:../lib/serial.c **** /*                                                                            */
+ 264              	n supports interworking.
+ 265              		@ args = 0, pretend = 0, frame = 0
+ 266              		@ frame_needed = 0, uses_anonymous_args = 0
+ 267              		@ link register save eliminated.
+ 268              		.loc 1 84 0
+  84:../lib/serial.c ****        */
+ 269              	r2, .L51
+ 270 0154 10209FE5 		ldr	r3, [r2, #20]
+ 271 0158 143092E5 		ands	r3, r3, #1
+ 272 015c 013013E2 		mov	r0, r3
+ 273 0160 0300A0E1 		.loc 1 86 0
+  85:../lib/serial.c ****         */
+  86:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+ 274              	e	r0, [r2, #0]
+ 275 0164 00009215 		.loc 1 83 0
+ 276              		@ lr needed for prologue
+ 277              		.loc 1 92 0
+  87:../lib/serial.c ****         */
+  88:../lib/serial.c **** /*  modified and extended by Martin Thomas                                    */
+  89:../lib/serial.c **** /*                                                                            */
+  90:../lib/serial.c **** /******************************************************************************/
+  91:../lib/serial.c **** 
+  92:../lib/serial.c **** #include "LPC214x.h"
+ 278              	lr
+ 279 0168 1EFF2FE1 	.L52:
+ 280              		.align	2
+ 281              	.L51:
+ 282              		.word	-536821760
+ 283 016c 00C000E0 	.LFE8:
+ 285              		.align	2
+ 286              		.global	getc0
+ 288              	getc0:
+ 289              	.LFB9:
+ 290              		.loc 1 96 0
+  93:../lib/serial.c **** ****************************************************************/
+  94:../lib/serial.c **** 
+  95:../lib/serial.c **** #include "LPC214x.h"
+  96:../lib/serial.c **** #include "target.h"
+ 291              	upports interworking.
+ 292              		@ args = 0, pretend = 0, frame = 0
+ 293              		@ frame_needed = 0, uses_anonymous_args = 0
+ 294              		@ link register save eliminated.
+ 295              		@ lr needed for prologue
+ 296              	.L55:
+ 297              		.loc 1 97 0
+  97:../lib/serial.c **** *******************************************/
+ 298              	, .L60
+ 299 0170 10209FE5 		ldr	r3, [r2, #20]
+ 300 0174 143092E5 		tst	r3, #1
+ 301 0178 010013E3 		beq	.L55
+ 302 017c FBFFFF0A 		.loc 1 98 0
+  98:../lib/serial.c ****       */
+ 303              	r0, [r2, #0]
+ 304 0180 000092E5 		.loc 1 99 0
+  99:../lib/serial.c ****        */
+ 305              	x	lr
+ 306 0184 1EFF2FE1 	.L61:
+ 307              		.align	2
+ 308              	.L60:
+ 309              		.word	-536821760
+ 310 0188 00C000E0 	.LFE9:
+ 312              		.section	.debug_frame,"",%progbits
+ 417              		.section	.debug_loc,"",%progbits
+DEFINED SYMBOLS
+                            *ABS*:00000000 serial.c
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:14     .text:00000000 init_serial0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:23     .text:00000000 $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:60     .text:00000048 $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:68     .text:00000054 init_serial1
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:76     .text:00000054 $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:114    .text:000000a0 $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:122    .text:000000ac putchar_serial0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:131    .text:000000ac $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:160    .text:000000e8 $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:166    .text:000000ec putc_serial0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:177    .text:000000ec $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:190    .text:00000108 $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:196    .text:0000010c putc_serial1
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:207    .text:0000010c $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:220    .text:00000128 $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:226    .text:0000012c putstring_serial0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:233    .text:0000012c $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:262    .text:00000154 getkey_serial0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:283    .text:0000016c $d
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:289    .text:00000170 getc0
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:299    .text:00000170 $a
+C:\Users\nancyhd\AppData\Local\Temp/ccO8aaaa.s:310    .text:00000188 $d
+
+UNDEFINED SYMBOLS
+__udivsi3

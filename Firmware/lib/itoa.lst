@@ -1,0 +1,120 @@
+   1              		.file	"itoa.c"
+   9              	.Ltext0:
+  10              		.global	__divsi3
+  11              		.global	__modsi3
+  12              		.section	.rodata.str1.4,"aMS",%progbits,1
+  13              		.align	2
+  14              	.LC0:
+  15 0000 30313233 		.ascii	"0123456789ABCDEF\000"
+  15      34353637 
+  15      38394142 
+  15      43444546 
+  15      00
+  16 0011 000000   		.text
+  17              		.align	2
+  18              		.global	convert
+  20              	convert:
+  21              	.LFB2:
+  22              		.file 1 "../lib/itoa.c"
+   1:../lib/itoa.c **** /*
+   2:../lib/itoa.c **** Print integers in a given base 2-16 (default 10)
+   3:../lib/itoa.c **** */
+   4:../lib/itoa.c **** //#include <stdio.h>
+   5:../lib/itoa.c **** //#include <stdlib.h>
+   6:../lib/itoa.c **** 
+   7:../lib/itoa.c **** int convert(int n, int b, char str[], int i) {
+  23              	n supports interworking.
+  24              		@ args = 0, pretend = 0, frame = 0
+  25              		@ frame_needed = 0, uses_anonymous_args = 0
+  26              	.LVL0:
+  27              		stmfd	sp!, {r4, r5, r6, r7, lr}
+  28 0000 F0402DE9 	.LCFI0:
+  29              		.loc 1 7 0
+  30              		mov	r4, r3
+  31 0004 0340A0E1 		mov	r7, r2
+  32 0008 0270A0E1 		mov	r5, r1
+  33 000c 0150A0E1 		mov	r6, r0
+  34 0010 0060A0E1 		.loc 1 8 0
+   8:../lib/itoa.c **** ], int i) {
+  35              	
+  36 0014 FEFFFFEB 	.LVL1:
+  37              		cmp	r0, #0
+  38 0018 000050E3 		.loc 1 9 0
+   9:../lib/itoa.c **** ], int i) {
+  39              	v	r3, r4
+  40 001c 0430A0E1 		mov	r1, r5
+  41 0020 0510A0E1 		mov	r2, r7
+  42 0024 0720A0E1 		.loc 1 8 0
+  43              		ble	.L2
+  44 0028 010000DA 	.LVL2:
+  45              		.loc 1 9 0
+  46              		bl	convert
+  47 002c FEFFFFEB 	.LVL3:
+  48              		mov	r4, r0
+  49 0030 0040A0E1 	.LVL4:
+  50              	.L2:
+  51              		.loc 1 10 0
+  10:../lib/itoa.c **** ], int i) {
+  52              	mov	r1, r5
+  53 0034 0600A0E1 		bl	__modsi3
+  54 0038 0510A0E1 		ldr	r3, .L5
+  55 003c FEFFFFEB 		ldrb	r3, [r3, r0]	@ zero_extendqisi2
+  56 0040 10309FE5 		.loc 1 12 0
+  57 0044 0030D3E7 		add	r0, r4, #1
+  11:../lib/itoa.c **** ], int i) {
+  12:../lib/itoa.c **** 	if (n/b > 0)
+  58              	1 10 0
+  59 0048 010084E2 		strb	r3, [r7, r4]
+  60              		.loc 1 12 0
+  61 004c 0430C7E7 		ldmfd	sp!, {r4, r5, r6, r7, lr}
+  62              		bx	lr
+  63 0050 F040BDE8 	.L6:
+  64 0054 1EFF2FE1 		.align	2
+  65              	.L5:
+  66              		.word	.LC0
+  67              	.LFE2:
+  69              		.align	2
+  70              		.global	itoa
+  72              	itoa:
+  73              	.LFB3:
+  74              		.loc 1 14 0
+  75              		@ Function supports interworking.
+  13:../lib/itoa.c ****  (n/b > 0)
+  14:../lib/itoa.c **** 		i = convert(n/b, b, str, i);
+  76              	nd = 0, frame = 0
+  77              		@ frame_needed = 0, uses_anonymous_args = 0
+  78              	.LVL5:
+  79              		stmfd	sp!, {r4, lr}
+  80              	.LCFI1:
+  81 005c 10402DE9 		.loc 1 15 0
+  82              		mov	r3, #0
+  15:../lib/itoa.c ****  str, i);
+  83              	 14 0
+  84 0060 0030A0E3 		mov	r4, r2
+  85              		.loc 1 15 0
+  86 0064 0240A0E1 		bl	convert
+  87              	.LVL6:
+  88 0068 FEFFFFEB 		.loc 1 16 0
+  89              		mov	r3, #0
+  16:../lib/itoa.c ****  str, i);
+  90              	3, [r4, r0]
+  91 006c 0030A0E3 		.loc 1 18 0
+  92 0070 0030C4E7 		ldmfd	sp!, {r4, lr}
+  17:../lib/itoa.c ****  str, i);
+  18:../lib/itoa.c **** 	str[i++] = "0123456789ABCDEF"[n%b];
+  93              		lr
+  94 0074 1040BDE8 	.LFE3:
+  96              		.section	.debug_frame,"",%progbits
+  97              	.Lframe0:
+ 152              	.Ldebug_loc0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 itoa.c
+C:\Users\nancyhd\AppData\Local\Temp/cciEaaaa.s:20     .text:00000000 convert
+C:\Users\nancyhd\AppData\Local\Temp/cciEaaaa.s:28     .text:00000000 $a
+C:\Users\nancyhd\AppData\Local\Temp/cciEaaaa.s:68     .text:00000058 $d
+C:\Users\nancyhd\AppData\Local\Temp/cciEaaaa.s:74     .text:0000005c itoa
+C:\Users\nancyhd\AppData\Local\Temp/cciEaaaa.s:81     .text:0000005c $a
+
+UNDEFINED SYMBOLS
+__divsi3
+__modsi3

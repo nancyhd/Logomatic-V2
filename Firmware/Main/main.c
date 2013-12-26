@@ -9,10 +9,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "LPC21xx.h"
+#include "string_printf.h"
+//#include "system.h"
 
 //UART0 Debugging
 #include "serial.h"
 #include "rprintf.h"
+
+//SPI
+#include "SPI1.h"
 
 //Needed for main function calls
 #include "main_msc.h"
@@ -121,11 +126,15 @@ int main (void)
 		delay_ms(50);
 		stat(1,OFF);
 	}
+
+	SPI1_Init();
+	SPI1_Write(0xAA);
+	SPI1_Write(0x55);
 	
 	Log_init();
 
 	count++;
-	string_printf(name,"LOF%02d.txt",count);
+	string_printf(name,"LOGtest2%02d.txt",count);
 	while(root_file_exists(name))
 	{
 		count++;
