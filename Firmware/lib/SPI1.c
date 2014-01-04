@@ -44,7 +44,7 @@
 
 void SPI1_Init(void)
 {
-	//Set configuration of peripheral
+	//Set configuration of peripheral, clock set to 1MHz
 	SSPCPSR = 2;//min value, caution SPI clock = PCLK/(SSPCPSR * (SPI_PCLK_DIVIDER + 1))
 	SSPCR0 = SPI_8_BIT_FRAME | SPI_FRAME_TYPE | SPI_PCLK_DIVIDER | SPI_PHASE | SPI_POLARITY;
 	SSPCR1 = 0;
@@ -58,15 +58,15 @@ void SPI1_Init(void)
 	SSPCR1 |= SPI_ENABLE;
 }
 
-unsigned char SPI1_Write(unsigned char data)
+u_int8 SPI1_Write(u_int8 data)
 {
 	SSPDR = (unsigned long)data;
 	while (SSPSR & SPI_BUSY);//wait for the send to complete
 	//I am assuming RNE is set, because we just clocked data out
-	return (unsigned char)(SSPDR & 0x000000ff);
+	return (u_int8)(SSPDR & 0x000000ff);
 }
 
-unsigned char SPI1_Read(void)
+u_int8 SPI1_Read(void)
 {
 	return SPI1_Write(0x00);
 }

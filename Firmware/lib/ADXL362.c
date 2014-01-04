@@ -18,6 +18,30 @@
 #define P0_30_SHIFT			30 /*P0.30 is the interrupt pin; EINT3*/
 
 
+
+reference:
+	if(want_ints == 1)
+	{
+		enableIRQ();
+		VICIntSelect &= ~0x00000040;
+		VICIntEnable |= 0x00000040;
+		VICVectCntl1 = 0x26;
+		VICVectAddr1 = (unsigned int)UART0ISR;
+		U0IER = 0x01;
+	}
+	else if(want_ints == 2)
+	{
+		enableIRQ();
+		VICIntSelect &= ~0x00000040;
+		VICIntEnable |= 0x00000040;
+		VICVectCntl2 = 0x26;
+		VICVectAddr2 = (unsigned int)UART0ISR_2;
+		U0IER = 0X01;
+	}
+	else if(want_ints == 0)
+	{
+		VICIntEnClr = 0x00000040;
+		U0IER = 0x00;
 /*Macros*/
 //Processor Interrupt Configuration
 #define configure_pin_ss() 			IODIR0       |= (1<<P0_20_SHIFT) /*Sets the CS pin, P0.20, to output*/
@@ -68,25 +92,33 @@ void ADXL362_Init(void){
 
 }
 
+void readAccDataFromFifo(void) {
+	int numSamples = readNumSamplesFifo();
+	select_ADXL362();
+	SPI1_Write(XL362_FIFO_READ);
+	for (int i = 0, i < numSamples, i++) {
+		u_int8 SPI1_Read();
+	}
+}
 
 //will only set low register values high; may need to add functionality later to set values to 0
-unsigned char ConfigureAcc(unsigned char reg, unsigned char value) {
-	unsigned char current_reg_val = ReadAcc(reg);
-	unsigned char new_val = current_reg_val |= value;
+u_int8 ConfigureAcc(u_int8 reg, u_int8 value) {
+	u_int8 current_reg_val = ReadAcc(reg);
+	u_int8 new_val = current_reg_val |= value;
 	WriteAcc(reg, new_val);
 	return new_val;
 }
 
-unsigned char ReadAcc(unsigned char reg) {
+u_int8 ReadAcc(u_int8 reg) {
 	select_ADXL362();
 	SPI1_Write(XL362_REG_READ);
 	SPI1_Write(reg);
-	unsigned char read_val = SPI1_Read();
+	u_int8 read_val = SPI1_Read();
 	deselect_ADXL362();
 	return read_val;
 }
 
-void WriteAcc(unsigned char reg, unsigned char value) {
+void WriteAcc(u_int8 reg, u_int8 value) {
 	select_ADXL362();
 	SPI1_Write(XL362_REG_WRITE);
 	SPI1_Write(reg);
@@ -97,14 +129,14 @@ void WriteAcc(unsigned char reg, unsigned char value) {
 
 
 bool ADXLDeviceIDCheck(void) {
-	unsigned char id = ReadAcc(XL362_DEVID_AD);
+	u_int8 id = ReadAcc(XL362_DEVID_AD);
 	return (id == 0xAD);
 }
 
 
 int readNumSamplesFifo(void){
-	unsigned char fifo_num_l = ReadAcc(XL362_FIFO_ENTRIES_L);
-	unsigned char fifo_num_h = ReadAcc(XL362_FIFO_ENTRIES_H);
+	u_int8 fifo_num_l = ReadAcc(XL362_FIFO_ENTRIES_L);
+	u_int8 fifo_num_h = ReadAcc(XL362_FIFO_ENTRIES_H);
 	fifo_num_h &= 0x03; /*only the last 2 bits of the upper register matter*/
 	int fifo_num_samples = (int)(((int)fifo_num_h<<8) | fifo_num_l);
 	return fifo_num_samples;
