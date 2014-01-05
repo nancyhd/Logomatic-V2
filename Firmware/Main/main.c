@@ -27,6 +27,8 @@
 #include "rootdir.h"
 #include "sd_raw.h"
 
+ //test
+
 
 /*******************************************************
  * 		     Global Variables
@@ -46,15 +48,16 @@ unsigned char log_array2 = 0;
 //0-511 is in log_array1; 512-1023 is in log_array2
 short RX_in = 0;
 
+int ADC_BUFFER_LENGTH = 128;
 //RX_array 1 and 2 are the arrays you'll write data to
-unsigned char ADC_array1[512];
-unsigned char ADC_array2[512];
+unsigned char ADC_array1[ADC_BUFFER_LENGTH];
+unsigned char ADC_array2[ADC_BUFFER_LENGTH];
 //log_array1 and 2 flag when the array is full; array is reset when it is read into the SD card
 unsigned char adc_array1_full = 0;
 unsigned char adc_array2_full = 0;
 //RX_in holds the index that you're in on RX_array1 or 2
 //0-511 is in log_array1; 512-1023 is in log_array2
-short RX_in = 0;
+short ADC_index = 0;
 
 
 //get_frame is for UART logging; a boolean that within the UART ISR will 
@@ -69,8 +72,8 @@ char stringBuf[256];
 //Flags for interrupts (SPI and ADC)
 bool ACC_FIFO_READY = false;
 bool ADC_READING_READY = false;
-static int OVERSAMPLING_AMOUNT = 256;  //number of ADC readings per recorded reading
-static int ADC_SAMPLES_PER_TRIG = 2;
+int OVERSAMPLING_AMOUNT = 256;  //number of ADC readings per recorded reading
+int ADC_SAMPLES_PER_TRIG = 2;
 
 int adc_trigger_index = 0;
 int adc_oversampling_index = 0; //how many samples you've collected towards oversampling 
@@ -124,7 +127,7 @@ void delay_ms(int count);
  * 		     	MAIN
  ******************************************************/
 
-int main (void)
+int main (void)  
 {
 	int i;
 	char name[32];
@@ -156,13 +159,8 @@ int main (void)
 	//Initialized the SPI1 interface for peripherals
 	SPI1_Init();
 
-	//test of functionality
-	SPI1_Write(0xAA);
-	SPI1_Write(0x55);
-
-	//log_init removed, default log file stuff tossed
-
 	//creates and names the new log file
+	//Errors if there are already 250 files
 	count++;
 	string_printf(name,"LOG%02d.txt",count);
 	while(root_file_exists(name))
@@ -193,14 +191,12 @@ int main (void)
 	
 	//meaty big function loop!  
 	while(1){
-	/*  1. 
-		3. Check log_array1 and 2; if needed call the write to the SD card
-		4. Check for button press, do that thing if needed
-		5. Go to sleep
-		Button press, ADC timer, acc_int GPIO, and ADC ready must all be set to wake processor from sleep
+	/*  1. If an ADC buffer is full, read it to the SD buffer, then read out the accel FIFO
+		3. If an SD buffer is full, write to the SD card
+		4. Check for button press, close out if the button is pressed
+		5. Go to sleep (not yet implemented)
+		Button press, ADC timer, and ADC ready must all be set to wake processor from sleep
 	*/
-		//read stored ADC data
-		//need some sort of time synch so I'm not addressing an ADC interrupt and writing this at the same time
 
 		//ACCEL trigger: 625Hz max, filter is still set by ODR though the ODR isn't used
 		//500Hz accelerometer, 256KHz ADC oversampled to 1KHz.  
@@ -247,13 +243,8 @@ void feed(void)
 	PLLFEED=0x55;
 }
 
-void initialize_adc()
+void initialize_adc(void)
 {
-	int temp = 0, temp2 = 0, ind = 0;
-	int j;
-	short a;
-	char q[50], temp_buff[4];
-
 	rprintf("Initializing ADC\n\r");	
 	enableIRQ();
 	// Timer0  interrupt is an IRQ interrupt
@@ -273,8 +264,7 @@ void initialize_adc()
 
 	T0TCR = 0x00000001; // enable timer
 
-	stringSize = 512;
-	//mode_action();  //hmmm- think about this
+	stringSize = 512; //???
 }
 
 static void UART0ISR(void)
@@ -329,24 +319,24 @@ static void writeShortToADCBuffer(unsigned short data)
 	unsigned short tempshort = (data & 0xFF00) >> 8;
 	mschar = (unsigned char)tempshort;	
 	lschar  = (unsigned char)(data & 0xFF);
-	writeCharToSDBuffer(mschar);
-	writeCharToSDBuffer(lschar);
+	writeCharToADCBuffer(mschar);
+	writeCharToADCBuffer(lschar);
 }
 
 
 static void writeCharToADCBuffer(unsigned char data)
 {
-	if(ADC_index < 128)
+	if(ADC_index < ADC_BUFFER_LENGTH)
 	{
 		ADC_array1[ADC_index] = data;
 		ADC_index++;
-		if(ADC_index == 128) log_array1 = 1;
+		if(ADC_index == ADC_BUFFER_LENGTH) log_array1 = 1;
 	}
-	else if(ADC_index >= 128)
+	else if(ADC_index >= ADC_BUFFER_LENGTH)
 	{
-		ADC_array2[ADC_index-128] = data;
+		ADC_array2[ADC_index-ADC_BUFFER_LENGTH] = data;
 		ADC_index++;
-		if(ADC_index == 256)
+		if(ADC_index == 2*ADC_BUFFER_LENGTH)
 		{
 			log_array2 = 1;
 			ADC_index = 0;
@@ -355,21 +345,21 @@ static void writeCharToADCBuffer(unsigned char data)
 	return 0;
 }
 
-bool writeFromADCToSDBuffer(void)
+bool writeShortFromADCToSDBuffer(void)
 {
 	int j;
 	if(adc_array1_full == 1)
 	{		
-		for(j=0; j<128; j++){
-			writeCharToSDBuffer(ADC_array1[j]);
+		for(j=0; j<ADC_BUFFER_LENGTH; j++){
+			writeCharToADCBuffer(ADC_array1[j]);
 		}
 		log_array1_full = 0;
 		return true;
 	}
 	if(adc_array2_full == 1)
 	{		
-		for(j=0; j<128; j++){
-			writeCharToSDBuffer(ADC_array1[j]);
+		for(j=0; j<ADC_BUFFER_LENGTH; j++){
+			writeCharToADCBuffer(ADC_array1[j]);
 		}
 		log_array2_full = 0;
 		return true;
@@ -428,8 +418,6 @@ static void ADC_TIMER_ISR(void)
 			triggerADXLConversion();
 		}
 
-		
-
 		//write int to data buffer
 		//make sure short is apprioriate in this case
 		writeShortToSDBuffer((unsigned short)adc_reading);
@@ -445,12 +433,10 @@ void FIQ_Routine(void)
 {
 	char a;
 	int j;
-
 	stat(0,ON);
 	for(j = 0; j < 5000000; j++);
 	stat(0,OFF);
 	a = U0RBR;
-
 	a = U0IIR;  // have to read this to clear the interrupt
 }
 
@@ -560,7 +546,7 @@ void mode_0(void) // Auto UART mode
 	rprintf("MODE 0\n\r");
 	setup_uart0(baud,1);
 	stringSize = 512;
-	mode_action();
+	//mode_action();
 	//rprintf("Exit mode 0\n\r");
 
 }
@@ -572,7 +558,7 @@ void mode_1(void)
 	setup_uart0(baud,2);
 	stringSize = frame + 2;
 
-	mode_action();
+	//mode_action();
 }
 
 
