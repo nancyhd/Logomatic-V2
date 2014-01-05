@@ -64,30 +64,34 @@ reference:
 
 void ADXL362_Init(void){
 	/*configure processor for the XL interrupt*/
+	/*not currently being used, going off counters in main loop instead
 	configure_pin_ss();
 	configure_pin_irq();
 	configure_irq_direction();
 	configure_int_wakeup();
 	configure_VIC_int();
-	configure_debug_pin(); //for debug use :)  SPI port = main debug port
+	configure_debug_pin(); //for debug use :) 
+	*/
 
 	/*configure accelerometer*/
 
 	//enables the FIFO in stream mode, 384 sample deep watermark (128 in 3 axes)
 	ConfigureAcc(XL362_FIFO_CTL, (XL362_FIFO_MODE_STREAM | XL362_FIFO_SAMPLES_AH));
 	//set int1 to a watermark interrupt (watermark configured in FILTER_CONTROL; 128samples of each axis)
-	ConfigureAcc(XL362_INTMAP1, XL362_INT_FIFO_WATERMARK);
-	//set the sampling rate to 400Hz
-	ConfigureAcc(XL362_FILTER_CTL, XL362_RATE_400);
+	//ConfigureAcc(XL362_INTMAP1, XL362_INT_FIFO_WATERMARK);
+
+	//set the sampling rate to 100Hz ****so the filter is set to 50Hz*****  Does not actually impact sampling rate
+	//since it is externally triggered
+	ConfigureAcc(XL362_FILTER_CTL, XL362_RATE_100);
 	//set into low noise mode
 	ConfigureAcc(XL362_POWER_CTL, XL362_LOW_NOISE2);
 	//Configure activity interrups to >0 so if enabled, they don't trigger constantly (still not enabled, though)
 	ConfigureAcc(XL362_THRESH_ACT_H, 0x04);
 	ConfigureAcc(XL362_TIME_ACT, 0xFF);
 	//Configure external trigger sampling
-	//ConfigureAcc(XL362_FILTER_CTL, XL362_EXT_TRIGGER);
+	ConfigureAcc(XL362_FILTER_CTL, XL362_EXT_TRIGGER);
 
-	//enable the accelerometer into measurement mode
+	//Do this last: enable the accelerometer into measurement mode
 	ConfigureAcc(XL362_POWER_CTL, XL362_MEASURE_3D);
 
 }
@@ -96,29 +100,31 @@ void readAccDataFromFifo(void) {
 	int numSamples = readNumSamplesFifo();
 	select_ADXL362();
 	SPI1_Write(XL362_FIFO_READ);
-	for (int i = 0, i < numSamples, i++) {
-		u_int8 SPI1_Read();
+	//2 bytes per sample
+	for (int i = 0; i < 2*numSamples; i++) {
+		writeCharToSDBuffer(SPI1_read());
 	}
+	deselect_ADXL362();
 }
 
 //will only set low register values high; may need to add functionality later to set values to 0
-u_int8 ConfigureAcc(u_int8 reg, u_int8 value) {
-	u_int8 current_reg_val = ReadAcc(reg);
-	u_int8 new_val = current_reg_val |= value;
+unsigned char ConfigureAcc(unsigned char reg, unsigned char value) {
+	unsigned char current_reg_val = ReadAcc(reg);
+	unsigned char new_val = current_reg_val |= value;
 	WriteAcc(reg, new_val);
 	return new_val;
 }
 
-u_int8 ReadAcc(u_int8 reg) {
+unsigned char ReadAcc(unsigned char reg) {
 	select_ADXL362();
 	SPI1_Write(XL362_REG_READ);
 	SPI1_Write(reg);
-	u_int8 read_val = SPI1_Read();
+	unsigned char read_val = SPI1_Read();
 	deselect_ADXL362();
 	return read_val;
 }
 
-void WriteAcc(u_int8 reg, u_int8 value) {
+void WriteAcc(unsigned char reg, unsigned char value) {
 	select_ADXL362();
 	SPI1_Write(XL362_REG_WRITE);
 	SPI1_Write(reg);
@@ -129,21 +135,17 @@ void WriteAcc(u_int8 reg, u_int8 value) {
 
 
 bool ADXLDeviceIDCheck(void) {
-	u_int8 id = ReadAcc(XL362_DEVID_AD);
+	unsigned char id = ReadAcc(XL362_DEVID_AD);
 	return (id == 0xAD);
 }
 
 
 int readNumSamplesFifo(void){
-	u_int8 fifo_num_l = ReadAcc(XL362_FIFO_ENTRIES_L);
-	u_int8 fifo_num_h = ReadAcc(XL362_FIFO_ENTRIES_H);
+	unsigned char fifo_num_l = ReadAcc(XL362_FIFO_ENTRIES_L);
+	unsigned char fifo_num_h = ReadAcc(XL362_FIFO_ENTRIES_H);
 	fifo_num_h &= 0x03; /*only the last 2 bits of the upper register matter*/
 	int fifo_num_samples = (int)(((int)fifo_num_h<<8) | fifo_num_l);
 	return fifo_num_samples;
-}
-
-void startADXL362(void) {
-	enable_meas();
 }
 
 

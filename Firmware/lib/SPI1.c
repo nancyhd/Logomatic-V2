@@ -58,15 +58,15 @@ void SPI1_Init(void)
 	SSPCR1 |= SPI_ENABLE;
 }
 
-u_int8 SPI1_Write(u_int8 data)
+unsigned char SPI1_Write(unsigned char data)
 {
 	SSPDR = (unsigned long)data;
 	while (SSPSR & SPI_BUSY);//wait for the send to complete
 	//I am assuming RNE is set, because we just clocked data out
-	return (u_int8)(SSPDR & 0x000000ff);
+	return (unsigned char)(SSPDR & 0x000000ff);
 }
 
-u_int8 SPI1_Read(void)
+unsigned char SPI1_Read(void)
 {
 	return SPI1_Write(0x00);
 }

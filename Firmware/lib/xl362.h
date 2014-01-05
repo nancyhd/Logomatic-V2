@@ -73,7 +73,7 @@
 #define XL362_TIME_INACTL        0x25
 #define XL362_TIME_INACTH        0x26
 #define XL362_ACT_INACT_CTL      0x27
-#define XL362_FIFO_CONTROL       0x28
+#define XL362_FIFO_CTL           0x28
 #define XL362_FIFO_SAMPLES       0x29
 #define XL362_INTMAP1            0x2a
 #define XL362_INTMAP2            0x2b
