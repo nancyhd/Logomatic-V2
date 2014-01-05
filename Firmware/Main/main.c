@@ -18,6 +18,7 @@
 
 //SPI1 for accelerometer
 #include "SPI1.h"
+#include "ADXL362.h"
 
 //Needed for main function calls
 #include "main_msc.h"
@@ -70,7 +71,6 @@ struct fat16_file_struct * fd;
 char stringBuf[256];
 
 //Flags for interrupts (SPI and ADC)
-bool ACC_FIFO_READY = false;
 bool ADC_READING_READY = false;
 int OVERSAMPLING_AMOUNT = 256;  //number of ADC readings per recorded reading
 int ADC_SAMPLES_PER_TRIG = 2;
@@ -99,20 +99,33 @@ static short frame = 100;
 
 void Initialize(void);
 
-void setup_uart0(int newbaud, char want_ints);
-
-
-void Log_init(void);
-void test(void);
-void stat(int statnum, int onoff);
-void AD_conversion(int regbank);
-
 void feed(void);
-
+void initialize_adc(void);
 static void IRQ_Routine(void) __attribute__ ((interrupt("IRQ")));
 static void UART0ISR(void); //__attribute__ ((interrupt("IRQ")));
 static void UART0ISR_2(void); //__attribute__ ((interrupt("IRQ")));
 static void ADC_TIMER_ISR(void); //__attribute__ ((interrupt("IRQ")));
+
+
+void writeShortToSDBuffer(unsigned short data);
+void writeCharToSDBuffer(unsigned char data);
+void writeShortToADCBuffer(unsigned char data);
+void writeCharToADCBuffer(unsigned char data);
+bool writeShortFromADCToSDBuffer(void);
+void readAccDataFromFifo(void);
+
+void setup_uart0(int newbaud, char want_ints);
+
+void mode_0(void);
+void mode_1(void);
+
+void writeToSDCard(void);
+void checkForButtonPress(void);
+
+void test(void);
+void stat(int statnum, int onoff);
+
+void AD_conversion(int regbank);
 
 void FIQ_Routine(void) __attribute__ ((interrupt("FIQ")));
 void SWI_Routine(void) __attribute__ ((interrupt("SWI")));
@@ -243,6 +256,17 @@ void feed(void)
 	PLLFEED=0x55;
 }
 
+void readAccDataFromFifo(void) {
+	int numSamples = readNumSamplesFifo();
+	select_ADXL362();
+	SPI1_Write(XL362_FIFO_READ);
+	//2 bytes per sample
+	for (int i = 0; i < 2*numSamples; i++) {
+		writeCharToSDBuffer(SPI1_read());
+	}
+	deselect_ADXL362();
+}
+
 void initialize_adc(void)
 {
 	rprintf("Initializing ADC\n\r");	
@@ -276,7 +300,7 @@ static void UART0ISR(void)
 }
 
 		
-static void writeShortToSDBuffer(unsigned short data)
+void writeShortToSDBuffer(unsigned short data)
 {
 	unsigned char mschar = 0;
 	unsigned char lschar = 0;
@@ -289,7 +313,7 @@ static void writeShortToSDBuffer(unsigned short data)
 }
 
 
-static void writeCharToSDBuffer(unsigned char data)
+void writeCharToSDBuffer(unsigned char data)
 {
 	if(RX_in < 512)
 	{
@@ -311,7 +335,7 @@ static void writeCharToSDBuffer(unsigned char data)
 }
 
 
-static void writeShortToADCBuffer(unsigned short data)
+void writeShortToADCBuffer(unsigned short data)
 {
 	unsigned char mschar = 0;
 	unsigned char lschar = 0;
@@ -324,7 +348,7 @@ static void writeShortToADCBuffer(unsigned short data)
 }
 
 
-static void writeCharToADCBuffer(unsigned char data)
+void writeCharToADCBuffer(unsigned char data)
 {
 	if(ADC_index < ADC_BUFFER_LENGTH)
 	{
@@ -367,17 +391,9 @@ bool writeShortFromADCToSDBuffer(void)
 	return false;
 }
 
-//don't use this right now
-static void ACC_INT_ISR(void)
-{
-	//reset GPIO interrupt
-	ACC_FIFO_READY = true;
-
-}
 
 //Divide into ISR for timer which sets up ADC read,
 //and ADC ISR which reads the ADC value out (make sure to do this in the ISR!)
-
 static void ADC_TIMER_ISR(void)
 {
 
@@ -539,8 +555,6 @@ void stat(int statnum, int onoff)
 }
 
 
-
-
 void mode_0(void) // Auto UART mode
 {
 	rprintf("MODE 0\n\r");
@@ -560,8 +574,6 @@ void mode_1(void)
 
 	//mode_action();
 }
-
-
 
 void writeToSDCard(void)
 {

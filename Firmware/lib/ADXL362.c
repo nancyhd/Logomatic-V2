@@ -1,8 +1,6 @@
 /******************************************************************************
 *   SPI1.c - SPI driver for use on the LPC214x Family Microcontrollers
 *
-*  
-*
 *   History
 *   12/22/13 - NHD - First draft.
 ******************************************************************************/
@@ -18,7 +16,7 @@
 #define P0_30_SHIFT			30 /*P0.30 is the interrupt pin; EINT3*/
 
 
-
+/*
 reference:
 	if(want_ints == 1)
 	{
@@ -42,6 +40,9 @@ reference:
 	{
 		VICIntEnClr = 0x00000040;
 		U0IER = 0x00;
+
+*/
+
 /*Macros*/
 //Processor Interrupt Configuration
 #define configure_pin_ss() 			IODIR0       |= (1<<P0_20_SHIFT) /*Sets the CS pin, P0.20, to output*/
@@ -51,10 +52,6 @@ reference:
 #define configure_VIC_int()			VICIntEnable |= (1<<17) /*17 is the EINT3 wakeup*/
 //clear interrupt: write 1 to EXTINT, clear VicIntEnClr
 
-
-//SPI CS macros
-#define select_ADXL362() 			IOCLR0 |= (1<<P0_20_SHIFT)
-#define deselect_ADXL362() 			IOSET0 |= (1<<P0_20_SHIFT)
 
 //debug pin
 #define configure_debug_pin()		IODIR0 |= (1<<12) /*P0.12 (P8 on the board) is my debug pin*/
@@ -78,7 +75,7 @@ void ADXL362_Init(void){
 	//enables the FIFO in stream mode, 384 sample deep watermark (128 in 3 axes)
 	ConfigureAcc(XL362_FIFO_CTL, (XL362_FIFO_MODE_STREAM | XL362_FIFO_SAMPLES_AH));
 	//set int1 to a watermark interrupt (watermark configured in FILTER_CONTROL; 128samples of each axis)
-	//ConfigureAcc(XL362_INTMAP1, XL362_INT_FIFO_WATERMARK);
+	ConfigureAcc(XL362_INTMAP1, XL362_INT_FIFO_WATERMARK);
 
 	//set the sampling rate to 100Hz ****so the filter is set to 50Hz*****  Does not actually impact sampling rate
 	//since it is externally triggered
@@ -96,16 +93,6 @@ void ADXL362_Init(void){
 
 }
 
-void readAccDataFromFifo(void) {
-	int numSamples = readNumSamplesFifo();
-	select_ADXL362();
-	SPI1_Write(XL362_FIFO_READ);
-	//2 bytes per sample
-	for (int i = 0; i < 2*numSamples; i++) {
-		writeCharToSDBuffer(SPI1_read());
-	}
-	deselect_ADXL362();
-}
 
 //will only set low register values high; may need to add functionality later to set values to 0
 unsigned char ConfigureAcc(unsigned char reg, unsigned char value) {
