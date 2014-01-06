@@ -19,10 +19,11 @@ main.o: main.c \
   c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/string.h \
   c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/sys/string.h \
   ../lib/LPC21xx.h ../lib/string_printf.h ../lib/serial.h \
-  ../lib/rprintf.h ../lib/SPI1.h ../LPCUSB/main_msc.h ../lib/fat16.h \
+  ../lib/rprintf.h ../lib/SPI1.h ../lib/ADXL362.h ../lib/xl362.h \
+  ../LPCUSB/main_msc.h ../lib/fat16.h \
   c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/stdint.h \
   ../LPCUSB/armVIC.h ../lib/itoa.h ../lib/rootdir.h ../lib/sd_raw.h \
-  ../lib/sd_raw_config.h
+  ../lib/sd_raw_config.h ../lib/type.h
 
 c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/stdio.h:
 
@@ -72,6 +73,10 @@ c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/sys/string.h:
 
 ../lib/SPI1.h:
 
+../lib/ADXL362.h:
+
+../lib/xl362.h:
+
 ../LPCUSB/main_msc.h:
 
 ../lib/fat16.h:
@@ -87,3 +92,5 @@ c:\winarm\bin\../lib/gcc/arm-elf/4.1.1/../../../../arm-elf/include/stdint.h:
 ../lib/sd_raw.h:
 
 ../lib/sd_raw_config.h:
+
+../lib/type.h:

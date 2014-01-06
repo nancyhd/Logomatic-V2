@@ -19,6 +19,7 @@
 //SPI1 for accelerometer
 #include "SPI1.h"
 #include "ADXL362.h"
+#include "xl362.h"
 
 //Needed for main function calls
 #include "main_msc.h"
@@ -27,6 +28,7 @@
 #include "itoa.h"
 #include "rootdir.h"
 #include "sd_raw.h"
+#include "type.h"
 
  //test
 
@@ -49,7 +51,7 @@ unsigned char log_array2 = 0;
 //0-511 is in log_array1; 512-1023 is in log_array2
 short RX_in = 0;
 
-int ADC_BUFFER_LENGTH = 128;
+#define ADC_BUFFER_LENGTH 	128
 //RX_array 1 and 2 are the arrays you'll write data to
 unsigned char ADC_array1[ADC_BUFFER_LENGTH];
 unsigned char ADC_array2[ADC_BUFFER_LENGTH];
@@ -71,7 +73,7 @@ struct fat16_file_struct * fd;
 char stringBuf[256];
 
 //Flags for interrupts (SPI and ADC)
-bool ADC_READING_READY = false;
+BOOL ADC_READING_READY = FALSE;
 int OVERSAMPLING_AMOUNT = 256;  //number of ADC readings per recorded reading
 int ADC_SAMPLES_PER_TRIG = 2;
 
@@ -82,11 +84,11 @@ int ADC_CHAN = 1;
 int ADC_FREQ = 256000;
 
 // Default Settings
-static char mode = 2; // 0 = auto uart, 1 = trigger uart, 2 = adc
-static char asc = 'N'; //ASCII.  N sets it to binary
+//static char mode = 2; // 0 = auto uart, 1 = trigger uart, 2 = adc
+//static char asc = 'N'; //ASCII.  N sets it to binary
 static int baud = 9600;  //setting 4 in defaults file
-static int freq = 100;   //ADC frequency setting; will overwrite this
-static char trig = '$';
+//static int freq = 100;   //ADC frequency setting; will overwrite this
+//static char trig = '$';
 //not entirely sure what this is for- changes size of arrays?
 static short frame = 100;
 
@@ -103,15 +105,15 @@ void feed(void);
 void initialize_adc(void);
 static void IRQ_Routine(void) __attribute__ ((interrupt("IRQ")));
 static void UART0ISR(void); //__attribute__ ((interrupt("IRQ")));
-static void UART0ISR_2(void); //__attribute__ ((interrupt("IRQ")));
+//static void UART0ISR_2(void); //__attribute__ ((interrupt("IRQ")));
 static void ADC_TIMER_ISR(void); //__attribute__ ((interrupt("IRQ")));
 
 
 void writeShortToSDBuffer(unsigned short data);
 void writeCharToSDBuffer(unsigned char data);
-void writeShortToADCBuffer(unsigned char data);
+void writeShortToADCBuffer(unsigned short data);
 void writeCharToADCBuffer(unsigned char data);
-bool writeShortFromADCToSDBuffer(void);
+unsigned int writeFromADCToSDBuffer(void);
 void readAccDataFromFifo(void);
 
 void setup_uart0(int newbaud, char want_ints);
@@ -262,7 +264,7 @@ void readAccDataFromFifo(void) {
 	SPI1_Write(XL362_FIFO_READ);
 	//2 bytes per sample
 	for (int i = 0; i < 2*numSamples; i++) {
-		writeCharToSDBuffer(SPI1_read());
+		writeCharToSDBuffer(SPI1_Read());
 	}
 	deselect_ADXL362();
 }
@@ -331,7 +333,7 @@ void writeCharToSDBuffer(unsigned char data)
 			RX_in = 0;
 		}
 	}
-	return 0;
+	return;
 }
 
 
@@ -345,6 +347,7 @@ void writeShortToADCBuffer(unsigned short data)
 	lschar  = (unsigned char)(data & 0xFF);
 	writeCharToADCBuffer(mschar);
 	writeCharToADCBuffer(lschar);
+	return;
 }
 
 
@@ -366,10 +369,10 @@ void writeCharToADCBuffer(unsigned char data)
 			ADC_index = 0;
 		}
 	}
-	return 0;
+	return;
 }
 
-bool writeShortFromADCToSDBuffer(void)
+unsigned int writeFromADCToSDBuffer(void)
 {
 	int j;
 	if(adc_array1_full == 1)
@@ -377,18 +380,18 @@ bool writeShortFromADCToSDBuffer(void)
 		for(j=0; j<ADC_BUFFER_LENGTH; j++){
 			writeCharToADCBuffer(ADC_array1[j]);
 		}
-		log_array1_full = 0;
-		return true;
+		adc_array1_full = 0;
+		return TRUE;
 	}
 	if(adc_array2_full == 1)
 	{		
 		for(j=0; j<ADC_BUFFER_LENGTH; j++){
 			writeCharToADCBuffer(ADC_array1[j]);
 		}
-		log_array2_full = 0;
-		return true;
+		adc_array2_full = 0;
+		return TRUE;
 	}
-	return false;
+	return FALSE;
 }
 
 
@@ -424,15 +427,17 @@ static void ADC_TIMER_ISR(void)
 
 		adc_oversampling_result += adc_reading;
 		adc_oversampling_index++;
-		adc_trigger_index++;
+		
 
 		if(adc_oversampling_index == OVERSAMPLING_AMOUNT) {
 			writeShortToADCBuffer(adc_oversampling_result);
+			adc_trigger_index++;
+			deassertADXLConversionTrigger();
 		}
 
 		if(adc_trigger_index == ADC_SAMPLES_PER_TRIG) {
-			triggerADXLConversion();
-		}
+			assertADXLConversionTrigger();
+		} 
 
 		//write int to data buffer
 		//make sure short is apprioriate in this case
@@ -515,7 +520,7 @@ void setup_uart0(int newbaud, char want_ints)
 	U0FCR = 0x01;
 	U0LCR = 0x03;   
 
-	if(want_ints == 1)
+	/*if(want_ints == 1)
 	{
 		enableIRQ();
 		VICIntSelect &= ~0x00000040;
@@ -523,8 +528,8 @@ void setup_uart0(int newbaud, char want_ints)
 		VICVectCntl1 = 0x26;
 		VICVectAddr1 = (unsigned int)UART0ISR;
 		U0IER = 0x01;
-	}
-	else if(want_ints == 2)
+	}*/
+	/*else if(want_ints == 2)
 	{
 		enableIRQ();
 		VICIntSelect &= ~0x00000040;
@@ -532,8 +537,9 @@ void setup_uart0(int newbaud, char want_ints)
 		VICVectCntl2 = 0x26;
 		VICVectAddr2 = (unsigned int)UART0ISR_2;
 		U0IER = 0X01;
-	}
-	else if(want_ints == 0)
+	}*/
+	if(want_ints == 0)
+	//else if(want_ints == 0)
 	{
 		VICIntEnClr = 0x00000040;
 		U0IER = 0x00;
@@ -627,6 +633,7 @@ void writeToSDCard(void)
 
 
 void checkForButtonPress(void) {
+	int j = 0;
 	if((IOPIN0 & 0x00000008) == 0) // if button pushed, log file & quit
 	{
 			VICIntEnClr = 0xFFFFFFFF;

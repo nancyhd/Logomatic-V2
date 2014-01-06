@@ -27,6 +27,8 @@
 	typedef unsigned char  BYTE;
 	typedef unsigned short WORD;
 	typedef unsigned long  DWORD;
-	//typedef unsigned int   BOOL;
+	#ifndef BOOL
+	typedef unsigned int   BOOL;
+	#endif
 
 #endif  /* __TYPE_H__ */

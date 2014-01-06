@@ -8,6 +8,8 @@
 #include "LPC214x.h"
 #include "SPI1.h"
 #include "xl362.h"
+#include "ADXL362.h"
+#include "type.h"
 
 
 /*Defines*/
@@ -53,11 +55,28 @@ reference:
 //clear interrupt: write 1 to EXTINT, clear VicIntEnClr
 
 
-//debug pin
-#define configure_debug_pin()		IODIR0 |= (1<<12) /*P0.12 (P8 on the board) is my debug pin*/
-#define set_debug()					IOSET0 |= (1<<12)
-#define clr_debug()					IOCLR0 |= (1<<12)
+// pin
+#define configure_trigger_pin()		    IODIR0 |= (1<<12) /*P0.12 (P8 on the board) is the trigger pin*/
+#define set_trigger()					IOSET0 |= (1<<12)
+#define clr_trigger()					IOCLR0 |= (1<<12)
+#define select_acc()					IOCLR0 |= (1<<P0_20_SHIFT);
+#define deselect_acc()					IOSET0 |= (1<<P0_20_SHIFT);
 
+void assertADXLConversionTrigger(void) {
+	set_trigger();
+}
+
+void deassertADXLConversionTrigger(void){
+	clr_trigger();
+}
+
+void select_ADXL362(void){
+	select_acc();
+}
+
+void deselect_ADXL362(void){
+	deselect_ADXL362();
+}
 
 void ADXL362_Init(void){
 	/*configure processor for the XL interrupt*/
@@ -67,9 +86,9 @@ void ADXL362_Init(void){
 	configure_irq_direction();
 	configure_int_wakeup();
 	configure_VIC_int();
-	configure_debug_pin(); //for debug use :) 
 	*/
-
+	
+	configure_trigger_pin();
 	/*configure accelerometer*/
 
 	//enables the FIFO in stream mode, 384 sample deep watermark (128 in 3 axes)
@@ -83,7 +102,7 @@ void ADXL362_Init(void){
 	//set into low noise mode
 	ConfigureAcc(XL362_POWER_CTL, XL362_LOW_NOISE2);
 	//Configure activity interrups to >0 so if enabled, they don't trigger constantly (still not enabled, though)
-	ConfigureAcc(XL362_THRESH_ACT_H, 0x04);
+	ConfigureAcc(XL362_THRESH_ACTH, 0x04);
 	ConfigureAcc(XL362_TIME_ACT, 0xFF);
 	//Configure external trigger sampling
 	ConfigureAcc(XL362_FILTER_CTL, XL362_EXT_TRIGGER);
@@ -121,7 +140,7 @@ void WriteAcc(unsigned char reg, unsigned char value) {
 }
 
 
-bool ADXLDeviceIDCheck(void) {
+unsigned int ADXLDeviceIDCheck(void) {
 	unsigned char id = ReadAcc(XL362_DEVID_AD);
 	return (id == 0xAD);
 }
