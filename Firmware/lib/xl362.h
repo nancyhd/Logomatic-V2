@@ -6,7 +6,7 @@
   Description        : XL362 Registers and bits values
   File ID            : $Id: xl362.h,v 1.1.1.1 2012/01/10 15:18:18 jlee11 Exp $
 
-  Analog Devices ADXL 362 digital output accellerometer 
+  Analog Devices ADXL 362 digital output accelerometer 
   with advanced digital features.
 
   Based on preliminary data sheet Rev 12b
