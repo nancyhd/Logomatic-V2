@@ -39,11 +39,12 @@
 
 #define ON	1
 #define OFF	0
-#define ADC_BUFFER_LENGTH 	128
-#define OVERSAMPLING_AMOUNT  256  //number of ADC readings per recorded reading
-#define ADC_SAMPLES_PER_TRIG  2
+#define ADC_BUFFER_LENGTH 	128 //buffer size in BYTES, so number of readings is HALF of this
+#define OVERSAMPLING_AMOUNT  16  //number of ADC readings per recorded reading (256 desired), MUST be even
+#define OVERSAMPLE_SHIFT 2    //4^(OVERSAMPLE_SHIFT) = OVERSAMPLE_AMOUNT; OVERSAMPLE_SHIFT = num bits added
+#define ADC_SAMPLES_PER_TRIG  1  // Try to keep it 1, ok
 #define ADC_CHAN  1
-#define ADC_FREQ  256000
+#define ADC_FREQ  160
 
 //Variables for the write to the SD card
  //RX_array 1 and 2 are the arrays you'll write data to
@@ -77,16 +78,17 @@ struct fat16_file_struct * fd;
 char stringBuf[256];
 
 
-int adc_trigger_index = 0;
+//int adc_trigger_index = 0;
 int adc_oversampling_index = 0; //how many samples you've collected towards oversampling 
-unsigned short adc_oversampling_result = 0;  //hold the ADC value while we're oversampling
+int adc_oversampling_result = 0;  //hold the ADC value while we're oversampling
+unsigned short adc_ovs = 0;		//adc_oversampling_result is bit shifted to a number under 16 bits; this holds it for the write to the buffer
 
 
 // Default Settings
 //static char mode = 2; // 0 = auto uart, 1 = trigger uart, 2 = adc
 //static char asc = 'N'; //ASCII.  N sets it to binary
 //from original code
-static int baud = 9600;  //setting 4 in defaults file
+static int baud = 115200;  //setting 4 in defaults file
 //static int freq = 100;   //ADC frequency setting; will overwrite this
 //static char trig = '$';
 //not entirely sure what this is for- changes size of arrays?
@@ -158,8 +160,8 @@ int main (void)
 	//sets up SD card, sets SPI0 to 1MHz
 	fat_initialize();		
 
-	//9600 baud, no interrupts enabled
-	setup_uart0(9600, 0);
+	//115200 baud, no interrupts enabled
+	setup_uart0(baud, 0);
 
 	// Flash Status Lights
 	for(i = 0; i < 5; i++)
@@ -178,7 +180,7 @@ int main (void)
 	//creates and names the new log file
 	//Errors if there are already 250 files
 	count++;
-	string_printf(name,"LOG%02d.txt",count);
+	string_printf(name,"LOG%02d.bin",count);
 	while(root_file_exists(name))
 	{
 		count++;
@@ -196,7 +198,7 @@ int main (void)
 			}
 
 		}
-		string_printf(name,"LOG%02d.txt",count);
+		string_printf(name,"LOG%02d.bin",count);
 	}
 	
 	handle = root_open_new(name);
@@ -204,32 +206,31 @@ int main (void)
 		
 	sd_raw_sync();	//write buffer to SD card
 
+	ADXL362_Init();
+	rprintf("ADXL Initialized\n\r");
+
 	initialize_adc();  
-	rprintf("ADC initialized\n\r");
+
+	//Clear all arrays
+	for (int i = 0; i < 512; i++) {
+		RX_array1[i] = 0;
+		RX_array2[i] = 0;
+	}
+
+	for (int i = 0; i < ADC_BUFFER_LENGTH; i++) {
+		ADC_array1[i] = 0;
+		ADC_array2[i] = 0;
+	}
 
 	//meaty big function loop!  
 	while(1){
-	/*  1. If an ADC buffer is full, read it to the SD buffer, then read out the accel FIFO
-		3. If an SD buffer is full, write to the SD card
-		4. Check for button press, close out if the button is pressed
-		5. Go to sleep (not yet implemented)
-		Button press, ADC timer, and ADC ready must all be set to wake processor from sleep
-	*/
 
-		//ACCEL trigger: 625Hz max, filter is still set by ODR though the ODR isn't used
-		//500Hz accelerometer, 256KHz ADC oversampled to 1KHz.  
-		//Every 512 ADC samples (oversample to 2ADC samples), trigger accelerometer
-		//So you get 2 ADC samples for each accelerometer sample
-		//at 64 ADC samples (128 bytes) (32 accel = 192 bytes) 320 total bytes; read into the buffers
-		//have 2 128 byte ADC buffers to switch between for this
-		//320 bytes about every 16th of a second => 5000 bytes per second => about 10 write cycles
-		//so you have about 100ms per write cycle; 45.2ms required, so this should be OK!
-
+		//If an ADC buffer is full
 		if(writeFromADCToSDBuffer()){
-			rprintf("Wrote ADC into SD buffer, reading ACC data\n\r");	
+			//rprintf("Wrote ADC into SD buffer, reading ACC data\n\r");	
 			readAccDataFromFifo();
 		}
-		writeToSDCard(); //writes if something is full
+		writeToSDCard(); //writes if one of the SD buffers is full
 		checkForButtonPress();
 	}
     return 0;
@@ -246,8 +247,11 @@ void Initialize(void)
 {
 	rprintf_devopen(putc_serial0);
 	
-	PINSEL0 = 0xCF351505;
+	PINSEL0 = 0xCC351505;
+	//Ha!  Sets P0.12 to 00 by the second hex # being C
+
 	PINSEL1 = 0x15441801;
+	//Sets P0.20 to GPIO by bits 8:9 = 00
 	IODIR0 |= 0x00000884;
 	IOSET0 = 0x00000080;
 
@@ -263,18 +267,59 @@ void feed(void)
 }
 
 void readAccDataFromFifo(void) {
+	//ADXL362 Data Delimiters
+	writeCharToSDBuffer(0xFF);
+	writeCharToSDBuffer(0xFF);
 	int numSamples = readNumSamplesFifo();
-	rprintf("%d samples in the FIFO\n\r", numSamples);
+	
 	select_ADXL362();
 	SPI1_Write(XL362_FIFO_READ);
 	//2 bytes per sample
-	for (int i = 0; i < 2*numSamples; i++) {
-		unsigned char dataOut = SPI1_Read();
-		writeCharToSDBuffer(dataOut);
+	for (int i = 0; i < (numSamples); i++) {
+		unsigned char dataOutLSB = SPI1_Read();
+		unsigned char dataOutMSB = SPI1_Read();
+		writeCharToSDBuffer(dataOutMSB);
+		writeCharToSDBuffer(dataOutLSB);
+		//rprintf("%x %x\n\r", dataOutMSB, dataOutLSB);	
+		//FOR TESTING ONLY
+		//Writes out the accelerometer data during each FIFO read
+		//Write the direction:
+		/*unsigned char axis = dataOutMSB & 0xC0;
+		if (axis == 0x00) {
+			rprintf("X: ");
+		} else if (axis == 0x40) {
+			rprintf("Y: ");
+		} else if (axis == 0x80) {
+			rprintf("Z: ");
+		}
+		//write the sign
+		unsigned char sign = dataOutMSB & 0x30;
+		unsigned short data = 0;
+		unsigned char MSB = dataOutMSB & 0x0F;
+		//positive
+		if (sign == 0x00) {
+			data = (unsigned short)(((unsigned short)MSB<<8) | dataOutLSB);
+			rprintf("+ ");
+		} else {
+			data = (unsigned short)(((unsigned short)MSB<<8) | dataOutLSB);
+			data = ((~data) & 0x0FFF) + 1;
+			rprintf("- ");
+		}
+		//float dataf = (float)data/(float)4096;
+		//rprintf("%f ", dataf);
+		rprintf("%d\n\r", data);
+		*/
+		//rprintf("Accel: %x  %x\n\r", dataOutMSB, dataOutLSB);
 		//rprintf("FIFO OUT: %d\n\r", dataOut);  //uncomment to see accel data as it comes from the FIFO
 	}
+
 	deselect_ADXL362();
-	rprintf("FIFO read complete!");
+	//End ADXL362 Delimiters
+	writeCharToSDBuffer(0xFF);
+	writeCharToSDBuffer(0x00);
+	//rprintf("%d samples in the FIFO\n\r", numSamples);
+	//rprintf("FIFO read complete!\n\r");
+	//rprintf("ADC Index: %d\n\r", ADC_index);
 }
 
 void initialize_adc(void)
@@ -289,16 +334,17 @@ void initialize_adc(void)
 	VICVectCntl2 = 0x24;
 	// Set the address of ISR for slot 2
 	VICVectAddr2 = (unsigned int)ADC_TIMER_ISR;
+	rprintf("Interrupts configured\n\r");
 
-	T0TCR = 0x00000002;	// Reset counter and prescaler
-	T0MCR = 0x00000003;	// On match reset the counter and generate interrupt
+	T0TCR = 0x02;	// Reset counter and prescaler
+	T0MCR = 0x0003;	// On match reset the counter and generate interrupt
+	//the match register value for the timer
 	T0MR0 = 58982400 / ADC_FREQ;
 	//need to check these timer settings
-
-	T0PR = 0x00000000;
-
-	T0TCR = 0x00000001; // enable timer
-
+	//rprintf("Match value:%d", (58982400 / ADC_FREQ));
+	T0PR = 0x00000000;  //"specifies the maximum value for the prescale counter"; not using prescale
+	//enables the timer, do this last
+	T0TCR = 0x00000001; // enables the timer
 	stringSize = 512; //???
 }
 
@@ -370,7 +416,9 @@ void writeCharToADCBuffer(unsigned char data)
 		ADC_index++;
 		if(ADC_index == ADC_BUFFER_LENGTH) {
 			adc_array1_full = 1;
+			//rprintf("ADCARRAY1 FULL \n\r");
 		}
+
 	}
 	else if(ADC_index >= ADC_BUFFER_LENGTH)
 	{
@@ -380,16 +428,20 @@ void writeCharToADCBuffer(unsigned char data)
 		{
 			adc_array2_full = 1;
 			ADC_index = 0;
+			//rprintf("ADCARRAY2 FULL \n\r");
 		}
 	}
+	//rprintf("ADC_index: %d\n\r", ADC_index);
 	return;
 }
 
 unsigned int writeFromADCToSDBuffer(void)
 {
-	int j;
+	//rprintf("Writing from adc to SD buffer\n\r");
 	if(adc_array1_full == 1)
 	{		
+		//rprintf("adcarray1full\n\r");
+		int j;
 		for(j=0; j<ADC_BUFFER_LENGTH; j++){
 			writeCharToSDBuffer(ADC_array1[j]);
 		}
@@ -398,8 +450,10 @@ unsigned int writeFromADCToSDBuffer(void)
 	}
 	if(adc_array2_full == 1)
 	{		
-		for(j=0; j<ADC_BUFFER_LENGTH; j++){
-			writeCharToSDBuffer(ADC_array1[j]);
+		//rprintf("adcarray2full\n\r");
+		int k;
+		for(k=0; k<ADC_BUFFER_LENGTH; k++){
+			writeCharToSDBuffer(ADC_array1[k]);
 		}
 		adc_array2_full = 0;
 		return TRUE;
@@ -415,8 +469,8 @@ static void ADC_TIMER_ISR(void)
 
 	T0IR = 1; // reset TMR0 interrupt
 	//start an ADC reading
-	//set to trigger ADC ISR eventually, BUT make sure to do the read in the ISR!!!
-	int temp = 0;
+	//Make sure to do the read in the ISR!!!
+	int adc_reg = 0;
 	int adc_reading = 0;
 	// Get AD1.2
 	if(ADC_CHAN == 1)
@@ -424,34 +478,42 @@ static void ADC_TIMER_ISR(void)
 		AD1CR = 0x00020FF04; // AD1.2
 		AD1CR |= 0x01000000; // start conversion
 		//waits for the conversion to complete
-		while((temp & 0x80000000) == 0)
+		while((adc_reg & 0x80000000) == 0)
 		{
-			//temp is the register containing the ADC reading
-			temp = AD1DR;
+			//register containing the ADC reading
+			adc_reg = AD1DR;
 		}
 		//masks the adc reading out of the register
-		temp &= 0x0000FFC0;
+		adc_reg &= 0x0000FFC0;
 		//shifts the reading over	
-		//adc_reading = temp / 0x00000040;
-		//10 bit reading altogether
-		adc_reading = temp >> 7;
-
+		adc_reading = adc_reg >> 6;
+		//rprintf("ADC reading: %x\n\r", adc_reading);
+		//rprintf("ADC reading: %d\n\r", adc_reading);
 		AD1CR = 0x00000000;
 
 		adc_oversampling_result += adc_reading;
 		adc_oversampling_index++;
+
+		if(adc_oversampling_index == OVERSAMPLING_AMOUNT/2) {
+			deassertADXLConversionTrigger();
+		}
 		
 
 		if(adc_oversampling_index == OVERSAMPLING_AMOUNT) {
-			writeShortToADCBuffer(adc_oversampling_result);
-			adc_trigger_index++;
-			deassertADXLConversionTrigger();
-			rprintf("Hit ovs mark!\n\r");
-			rprintf("OVS Value: %d\n\r", adc_oversampling_result); 
-			if(adc_trigger_index == ADC_SAMPLES_PER_TRIG) {
-				rprintf("Triggering acc\n\r");
+			adc_oversampling_result = adc_oversampling_result >> OVERSAMPLE_SHIFT;
+			adc_ovs = (unsigned short)adc_oversampling_result;
+			writeShortToADCBuffer(adc_ovs);
+			//adc_trigger_index++;
+			assertADXLConversionTrigger();
+			//rprintf("Hit ovs mark!\n\r");
+			//rprintf("OVS Value: %d\n\r", adc_oversampling_result); 
+			/*if(adc_trigger_index == (ADC_SAMPLES_PER_TRIG - 1)) {
+				//rprintf("Triggering acc\n\r");
 				assertADXLConversionTrigger();
-			}
+				adc_trigger_index = 0;
+			}*/
+			adc_oversampling_result = 0;
+			adc_oversampling_index = 0;
 		}
 	}
 	//"Updates the priority hardware" (from user manual)
@@ -573,10 +635,9 @@ void stat(int statnum, int onoff)
 void writeToSDCard(void)
 {
 	int j;
-	rprintf("Writing to the SD card!\n\r");
 	if(log_array1 == 1)
 	{
-		rprintf("Log array 1 being written\n\r");
+		//rprintf("Log array 1 being written\n\r");
 		stat(0,ON);			
 		if(fat16_write_file(handle,(unsigned char *)RX_array1, stringSize) < 0)
 		{
@@ -595,13 +656,13 @@ void writeToSDCard(void)
 		sd_raw_sync();
 		stat(0,OFF);
 		log_array1 = 0;
-		rprintf("Write to SD card of log array 1 complete\n\r");
+		//rprintf("SD1\n\r");
 	}
 
 	if(log_array2 == 1)
 	{
 		stat(1,ON);
-		rprintf("Log array 2 being written\n\r");
+		//rprintf("Log array 2 being written\n\r");
 		if(fat16_write_file(handle,(unsigned char *)RX_array2, stringSize) < 0)
 		{
 			while(1)
@@ -618,7 +679,7 @@ void writeToSDCard(void)
 		sd_raw_sync();
 		stat(1,OFF);
 		log_array2 = 0;
-		rprintf("Write to SD card of log array 2 complete\n\r");
+		//rprintf("SD2\n\r");
 	}
 }
 

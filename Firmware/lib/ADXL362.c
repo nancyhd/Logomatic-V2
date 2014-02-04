@@ -46,24 +46,31 @@ reference:
 */
 
 /*Macros*/
-//Processor Interrupt Configuration
+//Processor Interrupt Configuration for FIFO watermark (not used, or tested)
 #define configure_pin_ss() 			IODIR0       |= (1<<P0_20_SHIFT) /*Sets the CS pin, P0.20, to output*/
-#define configure_pin_irq() 		PINSEL1      |= ((EINT_SELECT) << (P0_30_SHIFT)) /*sets P0.30 to EINT3*/
+#define configure_pin_irq() 		PINSEL0      |= ((EINT_SELECT) << (P0_30_SHIFT)) /*sets P0.30 to EINT3*/
 #define configure_irq_direction()	EXTMODE      |= 0x04; EXTPOLAR |= 0x04  /*sets the interrupt to edge sensitive, rising edge*/
-#define configure_int_wakeup()		INTWAKE      |= (1<<3) /*so EINT3 can wake the processor from sleep*/
-#define configure_VIC_int()			VICIntEnable |= (1<<17) /*17 is the EINT3 wakeup*/
+#define configure_int_wakeup()		INTWAKE      |= (1<<3); /*so EINT3 can wake the processor from sleep*/
+#define configure_VIC_int()			VICIntEnable |= (1<<17); /*17 is the EINT3 wakeup*/
 //clear interrupt: write 1 to EXTINT, clear VicIntEnClr
 
 
 // pin
-#define configure_trigger_pin()		    IODIR0 |= (1<<12) /*P0.12 (P8 on the board) is the trigger pin*/
-#define set_trigger()					IOSET0 |= (1<<12)
-#define clr_trigger()					IOCLR0 |= (1<<12)
+#define configure_trigger_pin()		    IODIR0 |= (1<<12); /*P0.12 (P8 on the board) is the trigger pin*/
+#define set_trigger()					IOSET0 |= (1<<12);
+#define clr_trigger()					IOCLR0 |= (1<<12);
+#define configure_cs()					IODIR0 |= (1<<P0_20_SHIFT);
 #define select_acc()					IOCLR0 |= (1<<P0_20_SHIFT);
 #define deselect_acc()					IOSET0 |= (1<<P0_20_SHIFT);
 
 void assertADXLConversionTrigger(void) {
 	set_trigger();
+	/*rprintf("PINSEL0:%x\n\r", PINSEL0);
+	rprintf("IOPIN0:%x\n\r", IOPIN0);
+	rprintf("IOSET0:%x\n\r", IOSET0);
+	rprintf("IODIR0:%x\n\r", IODIR0);
+	while(1) {}*/
+	//rprintf("trigger set\n\r");
 }
 
 void deassertADXLConversionTrigger(void){
@@ -75,7 +82,7 @@ void select_ADXL362(void){
 }
 
 void deselect_ADXL362(void){
-	deselect_ADXL362();
+	deselect_acc();
 }
 
 void ADXL362_Init(void){
@@ -86,9 +93,13 @@ void ADXL362_Init(void){
 	configure_irq_direction();
 	configure_int_wakeup();
 	configure_VIC_int();
-	*/
-	
+	*/	
 	configure_trigger_pin();
+
+	configure_cs();	
+	deselect_acc();
+	rprintf("Pinsel1: %x\n\r", PINSEL1);
+
 	/*configure accelerometer*/
 
 	//enables the FIFO in stream mode, 384 sample deep watermark (128 in 3 axes)
@@ -110,6 +121,20 @@ void ADXL362_Init(void){
 	//Do this last: enable the accelerometer into measurement mode
 	ConfigureAcc(XL362_POWER_CTL, XL362_MEASURE_3D);
 
+	//Clear out all the existing samples in the FIFO
+	int samplesInFifo = readNumSamplesFifo();
+
+	select_ADXL362();
+	SPI1_Write(XL362_FIFO_READ);
+	//2 bytes per sample
+	for (int i = 0; i < 2*samplesInFifo; i++) {
+		SPI1_Read();
+		//rprintf("Accel: %x  %x\n\r", dataOutMSB, dataOutLSB);
+		//rprintf("FIFO OUT: %d\n\r", dataOut);  //uncomment to see accel data as it comes from the FIFO
+	}
+	rprintf("%d samples in the FIFO\n\r", samplesInFifo);
+	deselect_ADXL362();
+
 }
 
 
@@ -118,33 +143,33 @@ unsigned char ConfigureAcc(unsigned char reg, unsigned char value) {
 	unsigned char current_reg_val = ReadAcc(reg);
 	unsigned char new_val = current_reg_val |= value;
 	WriteAcc(reg, new_val);
+	rprintf("AccConfig: ");
+	rprintf("Reg %x, Val: %x\n\r", reg, ReadAcc(reg));
 	return new_val;
 }
 
 unsigned char ReadAcc(unsigned char reg) {
-	select_ADXL362();
+	select_acc();
 	SPI1_Write(XL362_REG_READ);
 	SPI1_Write(reg);
 	unsigned char read_val = SPI1_Read();
-	deselect_ADXL362();
+	deselect_acc();
 	return read_val;
 }
 
 void WriteAcc(unsigned char reg, unsigned char value) {
-	select_ADXL362();
+	select_acc();
 	SPI1_Write(XL362_REG_WRITE);
 	SPI1_Write(reg);
 	SPI1_Write(value);
-	deselect_ADXL362();
+	deselect_acc();
 	return;
 }
-
 
 unsigned int ADXLDeviceIDCheck(void) {
 	unsigned char id = ReadAcc(XL362_DEVID_AD);
 	return (id == 0xAD);
 }
-
 
 int readNumSamplesFifo(void){
 	unsigned char fifo_num_l = ReadAcc(XL362_FIFO_ENTRIES_L);
